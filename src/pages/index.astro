@@ -1,0 +1,21 @@
+---
+import TodoList from "@src/components/TodoList.astro"
+import BracketsList from "@src/components/BracketsList.astro"
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Astro</title>
+	</head>
+	<body>
+		<h1>Spotify + Every Noise at Once DJ</h1>
+    <h2>To dos</h2>
+    <TodoList />
+    <h2>Brackets - songs that the DJ will be able to come up with</h2>
+    <BracketsList />
+	</body>
+</html>
