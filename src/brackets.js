@@ -4,6 +4,28 @@
 // - a description of the bracket that will be passed into an AI prompt
 // each bracket also has 'conditions' function. when we're picking a bracket, we will only pick if the conditions are met.
 
+function getRandomItemFromArray(array) {
+  const randomIndex = Math.floor(Math.random() * array.length);
+  return array[randomIndex];
+}
+
+// function get multiple unique random items from array
+function getRandomItemsFromArray(array, numItems) {
+  if (numItems > array.length) {
+    throw new Error("Array does not have enough items");
+  }
+
+  const randomItems = [];
+  while (randomItems.length < numItems) {
+    const randomItem = getRandomItemFromArray(array);
+    // TODO: include won't work if the array contains objects
+    if (!randomItems.includes(randomItem)) {
+      randomItems.push(randomItem);
+    }
+  }
+  return randomItems;
+}
+
 // things to keep in mind:
 // - we want to keep track of history so we're not playing the same songs over and over again.
 export const brackets = [
@@ -11,9 +33,38 @@ export const brackets = [
     name: "Artist you haven't listened to in a while",
     func: (authToken) => {
       // fetch user's top artists for "long term" and "short term"
+      // TODO: implement Spotify API for this
+      const longTermArtists = [];
+      const shortTermArtists = [];
+
       // find an artist that is near the top of "long term" but isn't anywhere in "short term"
-      // fetch user's top tracks and see if there is a song by that artist. if there are multiple, play them all (up to 5)
-      // if there are no songs by that artist in the top tracks, just get one of their top songs
+      const longTermArtistsNotInShortTerm = longTermArtists.filter(
+        (artist) => !shortTermArtists.includes(artist)
+      );
+
+      const randomArtists = getRandomItemsFromArray(
+        longTermArtistsNotInShortTerm,
+        5
+      );
+
+      function getSongByArtist(artist) {
+        // TODO: implement Spotify API for this
+        // fetch user's top tracks and see if there is a song by that artist. if there are multiple, play them all (up to 5)
+        const userTopTracksLongTerm = [];
+        const userTopTracksByArtist = userTopTracksLongTerm.filter(
+          (track) => track.artist === artist
+        );
+
+        if (userTopTracksByArtist.length === 0) {
+          // if there are no songs by that artist in the top tracks, just get one of their top songs
+          const artistTopTracks = [];
+          const randomTrack = getRandomItemFromArray(userTopTracksByArtist);
+        }
+      }
+
+      const randomTracks = randomArtists.map((artist) =>
+        getSongByArtist(artist)
+      );
     },
     conditions: (userSettings) => {
       // if user is ok with listening to songs they've already heard, return true
