@@ -1,0 +1,10 @@
+---
+import Layout from "@src/components/Layout.astro";
+import {getSpotifyAuthUrl} from "@src/utils/auth";
+const authUrl = getSpotifyAuthUrl();
+---
+
+<Layout>
+	<a href={authUrl}>Login with Spotify</a>
+	<p>URL: {authUrl}</p>
+</Layout>

@@ -1,0 +1,29 @@
+---
+import Dump from "./Dump.astro";
+const { track } = Astro.props;
+const image = track.album.images.at(1);
+---
+
+<div class="artist">
+  <a href={track.external_urls.spotify}>
+    <img src={image.url} alt="" height={image.height} width={image.width} />
+    <p>{track.name}</p>
+    <p>{track.artists.map((artist) => artist.name).join(", ")}</p>
+  </a>
+</div>
+
+<style>
+  img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    width: 200px;
+    height: auto;
+
+    border-radius: 50%;
+  }
+
+  .artist {
+    padding: 1rem;
+    border: 1px solid black;
+  }
+</style>

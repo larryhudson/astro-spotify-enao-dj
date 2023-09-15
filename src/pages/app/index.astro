@@ -1,0 +1,23 @@
+---
+import {getAuthTokenFromAstro} from "@src/utils/auth";
+import {getRandomBracket} from "@src/brackets"
+import Dump from "@src/components/Dump.astro";
+import Layout from "@src/components/Layout.astro";
+import Track from "@src/components/Track.astro";
+import Grid from "@src/components/Grid.astro";
+
+const authToken = getAuthTokenFromAstro(Astro);
+const bracketData = await getRandomBracket({authToken});
+const tracks = bracketData.data;
+---
+
+<Layout>
+  <h1>Spotify + Every Noise at Once DJ</h1>
+  <Dump data={bracketData} />
+  <h2>{bracketData.bracket.name}</h2>
+  <Grid>
+  {tracks.map(track => <Track {track} />)}
+  </Grid>
+</Layout>
+
+

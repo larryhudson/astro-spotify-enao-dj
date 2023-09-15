@@ -1,0 +1,14 @@
+---
+import {getAuthTokenFromAstro} from "@src/utils/auth"
+import {getSpotifyAuthUrl} from "@src/utils/auth";
+const authToken = getAuthTokenFromAstro(Astro); 
+const authUrl = getSpotifyAuthUrl();
+
+const isLoggedIn = authToken
+---
+
+{isLoggedIn ? (
+<p>You are logged in. <a href="/auth/logout">Log out</a></p>
+) : (
+<p><a href={authUrl}>Login</a></p>
+)}
