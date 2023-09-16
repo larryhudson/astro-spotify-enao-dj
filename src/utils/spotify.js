@@ -47,6 +47,7 @@ async function fetchFromSpotify({ endpoint, queryParams, authToken }) {
     console.log({ errorData });
     throw new Error(spotifyResponse.statusText);
   }
+
   try {
     const spotifyData = await spotifyResponse.json();
     return spotifyData;
@@ -58,9 +59,38 @@ async function fetchFromSpotify({ endpoint, queryParams, authToken }) {
   }
 }
 
+export async function searchSpotify(authToken, searchQuery, searchTypes) {
+  const spotifyUrl = `search`;
+  const data = await fetchFromSpotify({
+    endpoint: spotifyUrl,
+    queryParams: {
+      q: searchQuery,
+      type: searchTypes.join(","),
+      market: "AU",
+    },
+    authToken,
+  });
+
+  // TODO: make this work for other types
+  const tracks = data.tracks.items;
+
+  return tracks;
+}
+
+export async function getSimilarArtists(authToken, artistId) {
+  const spotifyUrl = `artists/${artistId}/related-artists`;
+  const data = await fetchFromSpotify({
+    endpoint: spotifyUrl,
+    authToken,
+  });
+
+  const artists = data.artists;
+  return artists;
+}
+
 export async function getArtistTopTracks(authToken, artistId) {
-  console.log("Fetching top tracks for arist with ID", artistId);
-  console.log("with auth token", authToken);
+  // console.log("Fetching top tracks for arist with ID", artistId);
+  // console.log("with auth token", authToken);
   const spotifyUrl = `artists/${artistId}/top-tracks`;
   const data = await fetchFromSpotify({
     endpoint: spotifyUrl,
@@ -70,10 +100,41 @@ export async function getArtistTopTracks(authToken, artistId) {
     authToken,
   });
 
-  console.log("this is the data");
-  console.log(data);
+  // console.log("this is the data");
+  // console.log(data);
 
   return data.tracks;
+}
+
+export async function getCurrentUserPlaylists(authToken) {
+  const spotifyUrl = `me/playlists`;
+  const data = await fetchFromSpotify({
+    endpoint: spotifyUrl,
+    queryParams: {
+      limit: 50,
+    },
+    authToken,
+  });
+
+  const playlists = data.items;
+
+  return playlists;
+}
+
+export async function getSavedTracks(authToken) {
+  const spotifyUrl = `me/tracks`;
+  const data = await fetchFromSpotify({
+    endpoint: spotifyUrl,
+    queryParams: {
+      limit: 50,
+      offset: 0,
+    },
+    authToken,
+  });
+
+  const tracks = data.items;
+
+  return tracks;
 }
 
 export async function getCurrentUserProfile(authToken) {

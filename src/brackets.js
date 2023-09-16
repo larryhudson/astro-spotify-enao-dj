@@ -2,6 +2,10 @@ import {
   get99TopArtists,
   get99TopTracks,
   getArtistTopTracks,
+  getCurrentUserPlaylists,
+  getSavedTracks,
+  searchSpotify,
+  getSimilarArtists,
 } from "./utils/spotify";
 import pMap from "p-map";
 // brackets are batches of songs that the DJ comes up with.
@@ -101,10 +105,62 @@ export const brackets = [
   },
   {
     name: "Artist you've recently added to Liked Songs",
-    active: false,
-    func: (authToken) => {
+    active: true,
+    func: async (authToken) => {
       // fetch user's recently added tracks, added in the last month
+      const savedPlaylistItems = await getSavedTracks(authToken);
+
+      function filterTracksAddedInlastMonth(tracks) {
+        const now = new Date();
+
+        const oneMonthAgo = new Date(now);
+        // this isn't perfect - if it's the 31st of the month, we might miss some songs from the 1st of the month
+        oneMonthAgo.setMonth(now.getMonth() - 1);
+
+        return tracks.filter((item) => {
+          const itemDate = new Date(item.added_at);
+          return itemDate > oneMonthAgo;
+        });
+      }
+
+      const newSavedPlaylistItems =
+        filterTracksAddedInlastMonth(savedPlaylistItems);
+
+      const userTopArtistsLongTerm = await get99TopArtists(
+        authToken,
+        "long_term"
+      );
+
+      const userTopArtistsLongTermIds = userTopArtistsLongTerm.map(
+        (artist) => artist.id
+      );
+
+      // this is a little messy because spotify tracks have an array of artists
+      const newSavedPlaylistItemsByNewArtists = newSavedPlaylistItems.filter(
+        (item) => {
+          const artistIds = item.track.artists.map((a) => a.id);
+          return !artistIds.some((id) =>
+            userTopArtistsLongTermIds.includes(id)
+          );
+        }
+      );
+
       // if there are no liked songs, throw an error and we'll do something else
+      if (newSavedPlaylistItemsByNewArtists.length === 0) {
+        throw new Error("No saved tracks, skipping");
+      }
+      const newSavedTracks = newSavedPlaylistItemsByNewArtists.map(
+        (p) => p.track
+      );
+
+      const randomTrack = getRandomItemFromArray(newSavedTracks);
+
+      // get 5 songs from the artist
+      const artist = randomTrack.artists[0];
+      const artistTopTracks = await getArtistTopTracks(authToken, artist.id);
+      const randomArtistTracks = getRandomItemsFromArray(artistTopTracks, 5);
+
+      return randomArtistTracks;
       // if there are liked songs, pick one that is not in the user's top artists
     },
   },
@@ -121,11 +177,33 @@ export const brackets = [
   },
   {
     name: "New releases in one of your favourite genres",
-    active: false,
-    func: (authToken) => {
+    active: true,
+    func: async (authToken) => {
       // fetch user's long term top artists and get the genre names
-      // pick a random genre near the top of the list
-      // do a spotify search for new releases in that genre
+      const userTopArtistsLongTerm = await get99TopArtists(
+        authToken,
+        "long_term"
+      );
+
+      const userTopGenresLongTerm = userTopArtistsLongTerm
+        .flatMap((artist) => artist.genres)
+        .slice(0, 50);
+
+      const randomGenreName = getRandomItemFromArray(userTopGenresLongTerm);
+
+      const searchQuery = `genre:"${randomGenreName}" year:2023`;
+      const searchTypes = ["track"];
+
+      const searchResults = await searchSpotify(
+        authToken,
+        searchQuery,
+        searchTypes
+      );
+      const randomResults = getRandomItemsFromArray(searchResults, 5);
+
+      // TODO: need to also return a description, so the user knows what genre they're listening to
+
+      return randomResults;
       //
     },
   },
@@ -140,10 +218,59 @@ export const brackets = [
   },
   {
     name: "A lesser-known artist that you might like",
-    active: false,
-    func: (authToken) => {
+    active: true,
+    func: async (authToken) => {
       // get the user's top artists
+      const userTopArtistsLongTerm = await get99TopArtists(
+        authToken,
+        "long_term"
+      );
+
+      const userTopArtistsLongTermNames = userTopArtistsLongTerm.map(
+        (artist) => artist.name
+      );
+
+      console.log({ userTopArtistsLongTermNames });
+
+      const userTopArtistsLongTermIds = userTopArtistsLongTerm.map(
+        (artist) => artist.id
+      );
+
+      const randomArtists = getRandomItemsFromArray(userTopArtistsLongTerm, 5);
+
+      async function getObscureSimilarArtistForArtist(artist) {
+        const similarArtists = await getSimilarArtists(authToken, artist.id);
+
+        const unknownSimilarArtists = similarArtists.filter(
+          (a) => !userTopArtistsLongTermIds.includes(a.id)
+        );
+
+        // TODO: sometimes there are no artists with popularity less than 35
+        // in that case, return the least popular artist?
+        const obscureArtists = unknownSimilarArtists.filter((a) => {
+          return a.popularity < 35;
+        });
+
+        const randomArtist = getRandomItemFromArray(obscureArtists);
+
+        const artistTopTracks = await getArtistTopTracks(
+          authToken,
+          randomArtist.id
+        );
+
+        const randomTopTrack = getRandomItemFromArray(artistTopTracks);
+        return randomTopTrack;
+      }
+
+      const randomTracks = await pMap(
+        randomArtists,
+        getObscureSimilarArtistForArtist,
+        { concurrency: 1 }
+      );
+
+      return randomTracks;
       // get similar artists for a few of them
+      // filter artists to ones that are not in the user's top artists
       // filter artists to only ones that have less than 1k monthly listeners / followers?
       // maybe make sure they have at least 1 album?
       // maybe make sure the genres are in the user's top genres?
