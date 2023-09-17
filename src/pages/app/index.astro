@@ -1,6 +1,8 @@
 ---
 import {getAuthTokenFromAstro} from "@src/utils/auth";
-import {getRandomBracket} from "@src/brackets"
+import {getRandomBracket} from "@src/brackets";
+import {addTracksToQueue} from "@src/utils/spotify";
+
 import Dump from "@src/components/Dump.astro";
 import Layout from "@src/components/Layout.astro";
 import Track from "@src/components/Track.astro";
@@ -9,6 +11,10 @@ import Grid from "@src/components/Grid.astro";
 const authToken = getAuthTokenFromAstro(Astro);
 const bracketData = await getRandomBracket({authToken});
 const tracks = bracketData.data;
+
+const trackIds = tracks.map(track => track.id);
+await addTracksToQueue(authToken, trackIds);
+
 ---
 
 <Layout>

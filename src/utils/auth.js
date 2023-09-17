@@ -18,8 +18,9 @@ export function getSpotifyAuthUrl() {
     "user-top-read",
     "user-read-recently-played",
     "user-library-read",
+    "user-read-playback-state",
+    "user-modify-playback-state", // for adding items to queue
   ];
-
   authUrl.searchParams.set("scope", scopes.join(" "));
   authUrl.searchParams.set(
     "redirect_uri",

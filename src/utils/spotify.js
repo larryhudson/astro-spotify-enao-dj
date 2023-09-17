@@ -1,3 +1,5 @@
+import pMap from "p-map";
+
 export async function getAuthToken({ code }) {
   const { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } =
     import.meta.env;
@@ -24,7 +26,7 @@ export async function getAuthToken({ code }) {
   return spotifyResponse.access_token;
 }
 
-async function fetchFromSpotify({ endpoint, queryParams, authToken }) {
+async function fetchFromSpotify({ endpoint, queryParams, authToken, method }) {
   const fullSpotifyUrl = new URL(`https://api.spotify.com/v1/${endpoint}`);
 
   if (queryParams) {
@@ -34,13 +36,17 @@ async function fetchFromSpotify({ endpoint, queryParams, authToken }) {
     }
   }
 
-  console.log({ fullSpotifyUrl });
+  console.log("Fetching URL:");
+  console.log(fullSpotifyUrl.href);
 
   const spotifyResponse = await fetch(fullSpotifyUrl.toString(), {
     headers: {
       Authorization: `Bearer ${authToken}`,
     },
+    method: method || "GET",
   });
+
+  console.log("Status code:", spotifyResponse.status);
 
   if (!spotifyResponse.ok) {
     const errorData = await spotifyResponse.json();
@@ -49,6 +55,7 @@ async function fetchFromSpotify({ endpoint, queryParams, authToken }) {
   }
 
   try {
+    if (spotifyResponse.status === 204) return null;
     const spotifyData = await spotifyResponse.json();
     return spotifyData;
   } catch (e) {
@@ -104,6 +111,34 @@ export async function getArtistTopTracks(authToken, artistId) {
   // console.log(data);
 
   return data.tracks;
+}
+
+export async function addTrackToQueue(authToken, trackId) {
+  const spotifyUrl = `me/player/queue`;
+  const trackUri = `spotify:track:${trackId}`;
+
+  const data = await fetchFromSpotify({
+    endpoint: spotifyUrl,
+    queryParams: {
+      uri: trackUri,
+    },
+    authToken,
+    method: "POST",
+  });
+
+  return data;
+}
+
+export async function addTracksToQueue(authToken, trackIds) {
+  const spotifyUrl = `me/player/queue`;
+
+  const results = await pMap(
+    trackIds,
+    (trackId) => addTrackToQueue(authToken, trackId),
+    { concurrency: 1 }
+  );
+
+  return results;
 }
 
 export async function getCurrentUserPlaylists(authToken) {
